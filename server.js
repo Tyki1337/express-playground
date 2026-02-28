@@ -2,9 +2,9 @@ import express from "express"
 import router from "./src/routers/barrel.js"
 import session from "express-session";
 import passport from "passport"
-import mongoose from "mongoose";
+import { PrismaClient } from "@prisma/client/extension";
 
-mongoose.connect("mongodb://localhost:27017/db")
+export const prisma = new PrismaClient()
 
 const app = express();
 const PORT = 3000

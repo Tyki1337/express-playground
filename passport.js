@@ -3,12 +3,13 @@ import {Strategy} from "passport-local"
 import {User} from "./src/model/schema.js"
 import bcrypt from "bcryptjs"
 
+
 passport.serializeUser((user, done)=>{
   done(null, user.username)
 })
 
 passport.deserializeUser(async (username, done)=>{
-  const findUser = await User.findOne({username}).select({hash: 0, __v: 0})
+  const findUser = await 
   if(!findUser) return done(null, false)
   done(null, findUser)
 })
