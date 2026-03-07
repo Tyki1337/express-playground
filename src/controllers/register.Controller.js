@@ -1,13 +1,23 @@
-import { createUser, sendUserData } from "../model/UserOperations.js"
-import "../../passport.js"
+//import { createUser, sendUserData } from "../model/UserOperations.js"
+//import "../../passport.js"
 import passport from "../../passport.js"
+import {prisma} from "../../server.js"
+import bcrypt from "bcryptjs"
 
 export const register = async (req, res) => {
   const user = req.body
-  await createUser(user)
-  res.sendStatus(201)
+  user.hash = bcrypt.hash(user.password, 10)
+  delete user.password
+  await prisma.user.create({
+    data:{
+      username: user.username,
+      hash: user.hash
+    }
+  })
+  const {hash, ...safeUser} = user
+  res.status(201).json(safeUser)
 }
-
+/*
 export const getInfo = async (req, res) => {
   if (!req.isAuthenticated()) return res.status(403).json({ message: "not authorised" })
   const userObject = req.user.toObject()
@@ -33,4 +43,4 @@ export const isAuth = (req, res) => {
   next()
 }
 
-
+*/
