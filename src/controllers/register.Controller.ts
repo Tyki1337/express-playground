@@ -3,8 +3,9 @@
 import passport from "../../passport.js"
 import {prisma} from "../../server.js"
 import bcrypt from "bcryptjs"
+import {Request, Response} from "express"
 
-export const register = async (req, res) => {
+export const register = async (req: Request, res: Response) => {
   const user = req.body
   user.hash = bcrypt.hash(user.password, 10)
   delete user.password

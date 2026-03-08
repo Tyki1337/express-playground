@@ -1,8 +1,8 @@
 import { query, param, validationResult } from "express-validator"
 import { Router } from "express"
 import { User } from "../model/schema.js"
-import * as userController from "../controllers/user.Controller.js"
-import { isAuth } from "../controllers/register.Controller.js"
+import * as userController from "../controllers/user.Controller.ts"
+import { isAuth } from "../controllers/register.Controller.ts"
 const routerUser = Router()
 
 

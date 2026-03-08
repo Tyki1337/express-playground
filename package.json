@@ -1,9 +1,16 @@
 {
   "type": "module",
   "devDependencies": {
-    "@types/node": "^25.3.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.18.2",
+    "@types/node": "^25.3.5",
+    "@types/passport": "^1.0.17",
+    "@types/passport-local": "^1.0.38",
     "@types/pg": "^8.18.0",
-    "prisma": "^7.4.2"
+    "prisma": "^7.4.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^6.19.2",
@@ -11,5 +18,25 @@
     "dotenv": "^17.3.1",
     "install": "^0.13.0",
     "pg": "^8.19.0"
-  }
+  },
+  "name": "express_playground",
+  "version": "1.0.0",
+  "main": "server.ts",
+  "imports": {
+    "#*": "./*"
+  },
+  "scripts": {
+    "test": "tsx \"C:\\Users\\Tyki\\Desktop\\express_playground\\server.ts\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyki1337/express-playground.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Tyki1337/express-playground/issues"
+  },
+  "homepage": "https://github.com/Tyki1337/express-playground#readme",
+  "description": ""
 }

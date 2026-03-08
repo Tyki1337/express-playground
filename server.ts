@@ -2,14 +2,7 @@ import express from "express"
 import router from "./src/routers/barrel.js"
 import session from "express-session";
 import passport from "passport"
-import { PrismaClient } from "@prisma/client/extension";
-import {PrismaPg} from "@prisma/adapter-pg"
 
-const connectionString = `${process.env.DATABASE_URL}`;
-
-const adapter = new PrismaPg({ connectionString });
-const prisma = new PrismaClient({ adapter });
-export {prisma}
 
 const app = express();
 const PORT = 3000
