@@ -1,18 +1,20 @@
 //import { createUser, sendUserData } from "../model/UserOperations.js"
 //import "../../passport.js"
 import passport from "../../passport.js"
-import {prisma} from "../../server.js"
+import {prisma} from "#/lib/prisma.js"
 import bcrypt from "bcryptjs"
 import {Request, Response} from "express"
 
 export const register = async (req: Request, res: Response) => {
   const user = req.body
-  user.hash = bcrypt.hash(user.password, 10)
+  user.hash = bcrypt.hashSync(user.password, 10)
   delete user.password
   await prisma.user.create({
     data:{
       username: user.username,
-      hash: user.hash
+      hash: user.hash,
+      role: "user"
+
     }
   })
   const {hash, ...safeUser} = user

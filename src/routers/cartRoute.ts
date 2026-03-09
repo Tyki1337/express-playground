@@ -1,9 +1,9 @@
-import { Router } from "express";
-import { isAuth } from "../controllers/register.Controller.js";
+// import { Router } from "express";
+// import { isAuth } from "../controllers/register.Controller.js";
 
-const router = Router()
+// const router = Router()
 
-router.get("api/cart", isAuth, (req, res)=>{
-  if(!req.user.cart) return res.json({message: "cart is empty"})
-  return res.json({cart: req.user.cart})
-})
+// router.get("api/cart", isAuth, (req, res)=>{
+//   if(!req.user.cart) return res.json({message: "cart is empty"})
+//   return res.json({cart: req.user.cart})
+// })

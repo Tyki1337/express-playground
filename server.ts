@@ -18,14 +18,7 @@ app.use(session({
 app.use(passport.initialize())
 app.use(passport.session())
 app.use(router)
-app.use((err, res)=>{
-console.error(err.stack)
-const status = err.status || 500
-res.status(status).json({
-  success: false,
-  message: err.message || "Something went wrong"
-})
-})
+
 
 
 app.listen(PORT)

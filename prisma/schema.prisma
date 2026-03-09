@@ -6,17 +6,17 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output = "../src/generated"
 }
 
 datasource db {
   provider = "postgresql"
 }
-
 model User {
   id  Int @id @default(autoincrement())
   username String @unique
   hash String 
+  role String @default("user")
   createdAt DateTime @default(now())
   cart Cart?
 }
@@ -33,5 +33,3 @@ model CartItem{
   quantity Int @default(1)
   
 }
-
-
