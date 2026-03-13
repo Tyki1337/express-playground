@@ -6,17 +6,18 @@ import bcrypt from "bcryptjs"
 console.log('Passport keys:', Object.keys(passport || {}))
 
 
-passport.serializeUser((user: any, done: any)=>{
+passport.serializeUser((user : Express.User, done)=>{
   done(null, user.username)
 })
 
-passport.deserializeUser(async (username: string, done: any)=>{
+passport.deserializeUser(async (username: string, done)=>{
   try{
-  const findUser = await prisma.user.findUnique({
-    where:{username}
+  const findUser: Express.ReqUser | null = await prisma.user.findUnique({
+    where:{username}, select:{id: true, username: true, hash: true, role: true}
   })
   if(!findUser) return done(null, false)
-  done(null, findUser)
+  const {hash, ...safeUser} = findUser
+  done(null, safeUser)
   }
   catch(err){
     done(err)
@@ -26,11 +27,16 @@ passport.deserializeUser(async (username: string, done: any)=>{
 passport.use(
   new Strategy(async (username, password, done)=>{
     try{
-    const findUser = await prisma.user.findUnique({where:{username}})
+    const findUser : Express.ReqUser | null = await prisma.user.findUnique(
+    {where:{username}, select:{id: true, username: true, hash: true, role: true}})
+
     if(!findUser) return done(null, false)
-    const isMatch = bcrypt.compare(password, findUser.hash)
-    if(!isMatch) return done(null, false)  
-    return done(null, findUser)
+
+    const isMatch = await bcrypt.compare(password, findUser.hash)
+    if(!isMatch) return done(null, false)
+      
+    const {hash, ...safeUser} = findUser
+    return done(null, safeUser)
     }
   catch(err){
     done(err)

@@ -13,10 +13,10 @@ datasource db {
   provider = "postgresql"
 }
 model User {
-  id  Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
   username String @unique
   hash String 
-  role String @default("user")
+  role Role @default(USER)
   createdAt DateTime @default(now())
   cart Cart?
 }
@@ -32,4 +32,8 @@ model CartItem{
   cartId Int @unique
   quantity Int @default(1)
   
+}
+enum Role{
+  USER
+  ADMIN
 }
