@@ -1,8 +1,8 @@
 import {Request, Response, NextFunction} from "express"
-import {UserModel as User} from "../generated/models/User.js"
-import { AnyZodObject } from "zod/v3"
+import {deleteUser} from "../model/UserOperations.js"
+import { ZodType } from "zod"
 
-export const validateUser = (schema: AnyZodObject ) => (req: Request, res: Response, next: NextFunction)=>{
+export const validateUser = (schema: ZodType ) => (req: Request, res: Response , next: NextFunction)=>{
 const result = schema.safeParse(req.body)
 if(!result.success)
   res.status(400).json({"message": "error"})
@@ -10,9 +10,9 @@ req.body = result.data
 next()
 }
 
-export const checkRole = (role: User["role"], req: Request, res: Response, next: NextFunction)=>{
-  const {user} = req
-  if(user.role !== role)
-    res.sendStatus(403)
+export const checkRole = (req: Request, next: NextFunction)=>{
+  // const {user} = req.body.user
+  // if(req.user && (req.user.role === "ADMIN" || req.user.username === user.username))
+  //   deleteUser(user.username)
   next()
 }

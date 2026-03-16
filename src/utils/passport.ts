@@ -7,14 +7,15 @@ console.log('Passport keys:', Object.keys(passport || {}))
 
 
 passport.serializeUser((user : Express.User, done)=>{
-  done(null, user.username)
+  done(null, user.id)
 })
 
-passport.deserializeUser(async (username: string, done)=>{
+passport.deserializeUser(async (id: number, done)=>{
   try{
-  const findUser: Express.ReqUser | null = await prisma.user.findUnique({
-    where:{username}, select:{id: true, username: true, hash: true, role: true}
+  const findUser: Express.DBuser | null = await prisma.user.findUnique({
+    where:{id}, select:{id: true, username: true, role: true, hash: true}
   })
+
   if(!findUser) return done(null, false)
   const {hash, ...safeUser} = findUser
   done(null, safeUser)
@@ -27,7 +28,7 @@ passport.deserializeUser(async (username: string, done)=>{
 passport.use(
   new Strategy(async (username, password, done)=>{
     try{
-    const findUser : Express.ReqUser | null = await prisma.user.findUnique(
+    const findUser : Express.DBuser | null = await prisma.user.findUnique(
     {where:{username}, select:{id: true, username: true, hash: true, role: true}})
 
     if(!findUser) return done(null, false)

@@ -1,49 +1,50 @@
-//import { createUser, sendUserData } from "../model/UserOperations.js"
-//import "../../passport.js"
-import passport from "../../passport.js"
+import passport from "#utils/passport.js"
 import {prisma} from "#/lib/prisma.js"
 import bcrypt from "bcryptjs"
-import {Request, Response} from "express"
+import {NextFunction, Request, Response} from "express"
+import { AppError } from "#utils/customError.js"
 
 export const register = async (req: Request, res: Response) => {
-  const user = req.body
-  user.hash = bcrypt.hashSync(user.password, 10)
-  delete user.password
-  await prisma.user.create({
+  try{
+      const user : RawUser = req.body
+  const userHash = bcrypt.hashSync(user.password, 10)
+  const createdUser: Express.SafeUser = await prisma.user.create({
     data:{
       username: user.username,
-      hash: user.hash,
-      role: "user"
-
-    }
+      hash: userHash,
+    }, 
+    select:{id: true, username: true, role: true}
   })
-  const {hash, ...safeUser} = user
-  res.status(201).json(safeUser)
-}
-/*
-export const getInfo = async (req, res) => {
-  if (!req.isAuthenticated()) return res.status(403).json({ message: "not authorised" })
-  const userObject = req.user.toObject()
-  const { hash, __v, ...rest } = userObject
-  return res.json(rest)
+  res.status(201).json(createdUser)
+  }
+  catch(err){
+    throw new Error("Server problem")
+  }
+
 }
 
-export const authenticate = (strategy) => {
-  return (req, res, next) => {
-    passport.authenticate(strategy, (err, user) => {
-      if (!user || err) return res.json({ message: "jopa" })
-      req.logIn(user, (err) => {
-        if (err) return res.json({ message: "error" })
-        const { hash, __v, ...cleanUser } = user.toObject()
-        res.json({ message: "Success", cleanUser })
+export const getInfo = async (req: Request, res: Response) => {
+if(req.user)
+  return res.json(req.user)
+else 
+  return res.json("you're not authenticated")
+}
+
+export const authenticate = (strategy: string) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate(strategy, (err: AppError, user: Express.User) => {
+      if (!user || err) return next(err)
+      req.logIn(user, (err: AppError) => {
+        if (err) next(err)
+        res.json({ message: "Success", user})
       })
     })(req, res, next)
   }
 }
 
-export const isAuth = (req, res) => {
+export const isAuth = (req: Request, res: Response, next: NextFunction) => {
   if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authorized" })
   next()
 }
 
-*/
+

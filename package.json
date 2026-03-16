@@ -23,7 +23,7 @@
   "version": "1.0.0",
   "main": "server.ts",
   "imports": {
-    "#*": "./*"
+    "#*": "./dist/*"
   },
   "scripts": {
     "test": "tsx \"C:\\Users\\Tyki\\Desktop\\express_playground\\server.ts\""
