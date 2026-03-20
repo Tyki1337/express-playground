@@ -2,13 +2,14 @@ import express, {Response, Request, NextFunction } from "express"
 import router from "./src/routers/barrel.js"
 import session from "express-session";
 import passport from "passport"
+import "dotenv"
 
 
 const app = express();
 const PORT = 3000
 app.use(express.json())
 app.use(session({
-  secret: "test",
+  secret: process.env.SESSION_SECRET || "backup-key",
   saveUninitialized: false,
   resave: false,
   cookie: {

@@ -1,18 +1,17 @@
 import {Request, Response, NextFunction} from "express"
-import {deleteUser} from "../model/UserOperations.js"
 import { ZodType } from "zod"
+import { AppError } from "#utils/errorRelated.js"
 
-export const validateUser = (schema: ZodType ) => (req: Request, res: Response , next: NextFunction)=>{
+export const validateData = (schema: ZodType ) => (req: Request, res: Response , next: NextFunction)=>{
 const result = schema.safeParse(req.body)
-if(!result.success)
-  res.status(400).json({"message": "error"})
+if(!result.success){
+  return next(new AppError(result.error.message, 400))
+}
 req.body = result.data
 next()
 }
 
-export const checkRole = (req: Request, next: NextFunction)=>{
-  // const {user} = req.body.user
-  // if(req.user && (req.user.role === "ADMIN" || req.user.username === user.username))
-  //   deleteUser(user.username)
-  next()
+export const checkAdminRole = (req: Express.Request, next: NextFunction)=>{
+  if(req.user?.role === "ADMIN") return next()
+  next(new AppError("Access denied", 403))
 }

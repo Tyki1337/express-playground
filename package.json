@@ -23,10 +23,10 @@
   "version": "1.0.0",
   "main": "server.ts",
   "imports": {
-    "#*": "./dist/*"
+    "#*": "./src/*"
   },
   "scripts": {
-    "test": "tsx \"C:\\Users\\Tyki\\Desktop\\express_playground\\server.ts\""
+    "dev": "tsx \"C:\\Users\\Tyki\\Desktop\\express_playground\\server.ts\""
   },
   "repository": {
     "type": "git",
