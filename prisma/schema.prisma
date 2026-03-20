@@ -37,11 +37,12 @@ model CartItem{
 }
 model Product{
   id Int @id @default(autoincrement())
-  title String
+  title String?
   price Int @default(0)
   rating Float @default(0)
   description String @default("No description")
-  image String
+  image String?
+  category String
 }
 enum Role{
   USER
