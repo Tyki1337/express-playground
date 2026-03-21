@@ -1,11 +1,13 @@
-import { validationProductQuery } from "#utils/validationSchema.js";
-import { validateData } from "#middleware/validationMiddleware.js";
+import { validateIdSchema, validationProductQuery } from "#utils/validationSchema.js";
+import { validateBody, validateParams } from "#middleware/validationMiddleware.js";
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "#lib/prisma.js";
 import { SortOrder } from "#generated/internal/prismaNamespace.js";
+import { AppError, getErrorMessage } from "#utils/errorRelated.js";
 
 const productQuery = async (req: Request, res: Response, next: NextFunction)=>{
-  validateData(validationProductQuery)
+  try{
+  validateBody(validationProductQuery)
   const {page, limit, category, search, sort} = validationProductQuery.parse(req.query)
   const take = limit || 20
   const skip = page ? (page-1)* take : 0
@@ -21,5 +23,20 @@ const productQuery = async (req: Request, res: Response, next: NextFunction)=>{
   }),
   await prisma.product.count({where})
 ])
+  }
+  catch(err){
+    next(new AppError(getErrorMessage(err), 500))
+  }
+}
 
+const productById = async (req: Request, res: Response, next: NextFunction)=>{
+  try{
+  validateParams(validateIdSchema)
+  const id = validateIdSchema.parse(req.params)
+  res.status(200).json(await prisma.product.findUnique({
+    where: {id}
+  }))}
+  catch(err){
+    next(new AppError(getErrorMessage(err), 500))
+  }
 }

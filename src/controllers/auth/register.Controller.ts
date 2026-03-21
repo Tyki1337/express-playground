@@ -7,7 +7,6 @@ import { AppError, getErrorMessage } from "#utils/errorRelated.js"
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try{
   const user : RawUser = req.body
-  console.log(user)
   const userHash = bcrypt.hashSync(user.password, 10)
   const createdUser: Express.SafeUser = await prisma.user.create({
     data:{

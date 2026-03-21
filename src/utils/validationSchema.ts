@@ -28,4 +28,4 @@ export const validationProductQuery = z.looseObject({
 )
 
 
-export const validateNameSchema = z.int()
+export const validateIdSchema = z.coerce.number().int()
