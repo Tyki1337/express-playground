@@ -34,7 +34,10 @@ else
 export const authenticate = (strategy: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate(strategy, (err: AppError, user: Express.User) => {
-      if (!user || err) return next(new AppError(err.message, 400))
+
+      if(err) return next(new AppError(err.message, 500))
+      if (!user) return next(new AppError("Invalid credentials", 401))
+        
       req.logIn(user, (err: AppError) => {
         if (err) return next(new AppError(err.message, 500))
         res.json({ message: "Success", user})
@@ -44,7 +47,7 @@ export const authenticate = (strategy: string) => {
 }
 
 export const isAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authorized" })
+  if (!req.isAuthenticated()) return next(new AppError("Not authorized", 403))
   next()
 }
 

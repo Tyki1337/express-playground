@@ -1,6 +1,6 @@
 import {NextFunction, Request, Response} from "express"
 import {prisma} from "#/lib/prisma.js"
-import { validateNameSchema as schema } from "#/utils/validationSchema.js"
+import { validateIdSchema as schema } from "#/utils/validationSchema.js"
 import { AppError } from "#utils/errorRelated.js"
 
 

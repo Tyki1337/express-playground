@@ -16,7 +16,7 @@ const productQuery = async (req: Request, res: Response, next: NextFunction)=>{
   ...(search && {title: {contains: search}}),
   ...(category && {category: {category}})
   }
-
+  
   const [items, count] =  await Promise.all([
   await prisma.product.findMany({
   where, orderBy, take, skip

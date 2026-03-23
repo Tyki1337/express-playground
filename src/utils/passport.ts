@@ -9,13 +9,11 @@ passport.serializeUser((user: Express.User, done) => {
 
 passport.deserializeUser(async (id: number, done) => {
   try {
-    const findUser: Express.DBuser | null = await prisma.user.findUnique({
-      where: { id }, select: { id: true, username: true, role: true, hash: true }
+    const findUser: Express.User | null = await prisma.user.findUnique({
+      where: { id }, select: { id: true, username: true, role: true}
     })
-
     if (!findUser) return done(null, false)
-    const { hash, ...safeUser } = findUser
-    done(null, safeUser)
+    done(null, findUser)
   }
   catch (err) {
     done(err)
@@ -23,10 +21,10 @@ passport.deserializeUser(async (id: number, done) => {
 })
 
 passport.use(
-  new Strategy(async (email, password, done) => {
+  new Strategy({usernameField: 'email'}, async (email, password, done) => {
     try {
       const findUser: Express.DBuser | null = await prisma.user.findUnique(
-        { where: { email }, select: { id: true, username: true, hash: true, role: true } })
+        { where: { email }, select: { id: true, username: true, hash: true  , role: true } })
 
       if (!findUser) return done(null, false)
 

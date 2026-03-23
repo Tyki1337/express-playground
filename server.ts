@@ -3,10 +3,29 @@ import router from "./src/routers/barrel.js"
 import session from "express-session";
 import passport from "passport"
 import "dotenv"
+import cors from "cors"
+import { CorsOptions } from "cors";
+import { AppError } from "#utils/errorRelated.js";
 
 
 const app = express();
 const PORT = 3000
+const whitelist = ['http://localhost:3000']
+const corsOptions : CorsOptions = {
+  origin: (origin, callback) =>{
+    if(!origin || whitelist.includes(origin)){
+      callback(null, true)
+    }
+    else{
+      callback(new AppError("CORS blocked request", 403))
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', "Authorization"]
+  
+}
+app.use(cors(corsOptions))
 app.use(express.json())
 app.use(session({
   secret: process.env.SESSION_SECRET || "backup-key",
@@ -32,4 +51,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) =>{
 })
 
 
-app.listen(PORT)
+app.listen(PORT, ()=>{
+  console.log("Server ready")
+})

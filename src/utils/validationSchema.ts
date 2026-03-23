@@ -27,5 +27,9 @@ export const validationProductQuery = z.looseObject({
 }
 )
 
-
 export const validateIdSchema = z.coerce.number().int()
+
+export const validationChangePasswordschema = z.looseObject({
+  current_password: z.string().min(5).max(10),
+  new_password: z.string().min(5).max(10)
+})
