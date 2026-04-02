@@ -1,13 +1,13 @@
 import * as z from "zod"
 
-export const validationUserSchema = z.looseObject({
+export const validationUserSchema = z.object({
   username: z.string().min(5).max(10),
   password: z.string().min(5).max(10),
   email: z.email().optional(),
   secondName: z.string().max(20).optional()
 })
 
-export const validationProductQuery = z.looseObject({
+export const validationProductQuery = z.object({
   search: z.string().trim().optional(),
   category: z.string().trim().optional(),
   sort: z.enum(['price_asc', 'price_desc', 'name']).optional(),
@@ -29,7 +29,30 @@ export const validationProductQuery = z.looseObject({
 
 export const validateIdSchema = z.coerce.number().int()
 
-export const validationChangePasswordschema = z.looseObject({
+export const validationChangePasswordschema = z.object({
   current_password: z.string().min(5).max(10),
   new_password: z.string().min(5).max(10)
 })
+
+const cartItemSchema = z.object({
+  qty: z.number().int().min(1),
+  size: z.string().trim().optional(),
+  color: z.string().trim().optional()
+})
+
+export const CartSchema = z.object({
+  items: z.array(cartItemSchema)
+})
+export const orderItemSchema = z.object({
+  product_id: z.int().positive(),
+  quantity: z.int().min(1).positive(),
+  size: z.string().optional(),
+  color: z.string().optional(),
+  price: z.int()
+})
+export const orderSchema = z.object({
+  items: z.array(orderItemSchema).nonempty("Order must have at least one item"),
+  promocode: z.string().optional(),
+  delivery_adress: z.string()
+})
+export type CartBody = z.infer<typeof CartSchema>
