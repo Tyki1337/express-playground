@@ -5,7 +5,6 @@ import {NextFunction, Request, Response} from "express"
 import { AppError, getErrorMessage } from "#utils/errorRelated.js"
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
-  try{
   const user : RawUser = req.body
   const userHash = bcrypt.hashSync(user.password, 10)
   const createdUser: Express.SafeUser = await prisma.user.create({
@@ -16,13 +15,13 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }, 
     select:{id: true, username: true, role: true, email: true}
   })
+  req.logIn(createdUser, (err: AppError)=> {
+    if (err) throw new AppError("Authentification error", 500)
+  })
   res.status(201).json(createdUser)
   }
-  catch(err){
-    next(new AppError(getErrorMessage(err), 500))
-  }
 
-}
+
 
 export const getInfo = async (req: Request, res: Response, next: NextFunction) => {
 if(req.user)

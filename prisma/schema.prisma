@@ -1,50 +1,94 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
-  output = "../src/generated"
+  output   = "../src/generated"
 }
 
 datasource db {
   provider = "postgresql"
 }
+
 model User {
-  id Int @id @default(autoincrement())
-  username String
+  id         Int      @id @default(autoincrement())
+  username   String
+  hash       String
+  role       Role     @default(USER)
+  createdAt  DateTime @default(now())
+  email      String?  @unique
   secondName String?
-  email String? @unique
-  hash String 
-  role Role @default(USER)
-  createdAt DateTime @default(now())
-  cart Cart?
+  cart       Cart?
+  Order      Order[]
 }
-model Cart{
-  id Int @id @default(autoincrement())
-  user User @relation(fields: [userId], references: [id])
-  userId Int @unique
-  items CartItem[]
+
+model Cart {
+  id     Int       @id @default(autoincrement())
+  userId Int       @unique
+  user   User      @relation(fields: [userId], references: [id])
+  items  CartItem?
 }
-model CartItem{
-  id Int @id @default(autoincrement())
-  Cart Cart @relation(fields: [cartId], references: [id])
-  cartId Int @unique
-  quantity Int @default(1)
-  
+
+model CartItem {
+  id       Int  @id @default(autoincrement())
+  cartId   Int  @unique
+  quantity Int  @default(1)
+  Cart     Cart @relation(fields: [cartId], references: [id])
 }
-model Product{
-  id Int @id @default(autoincrement())
-  title String?
-  price Int @default(0)
-  rating Float @default(0)
-  description String @default("No description")
-  image String?
-  category String
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  title       String?
+  price       Int         @default(0)
+  rating      Float       @default(0)
+  description String      @default("No description")
+  image       String?
+  category    String
+  OrderItem   OrderItem[]
 }
-enum Role{
+
+model Promo {
+  id        Int       @id @default(autoincrement())
+  promocode String    @unique
+  exp       DateTime?
+  discount  Int
+  Order     Order[]
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  status     OrderStatus @default(PENDING)
+  total      Int
+  totalFinal Int?
+  address    String?
+  comment    String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  promoId    Int?
+  Promo      Promo?      @relation(fields: [promoId], references: [id])
+  userId     Int
+  User       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  OrderItem  OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  qty       Int
+  price     Int
+  size      String?
+  color     String?
+  orderId   Int
+  Order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  Product   Product @relation(fields: [productId], references: [id])
+}
+
+enum Role {
   USER
   ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
 }

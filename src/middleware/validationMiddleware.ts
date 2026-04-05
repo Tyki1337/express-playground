@@ -20,8 +20,3 @@ if(!result.success){
 req.params = result.data as ParamsDictionary
 next()
 }
-
-export const checkAdminRole = (req: Express.Request, next: NextFunction)=>{
-  if(req.user?.role === "ADMIN") return next()
-  next(new AppError("Access denied", 403))
-}

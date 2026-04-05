@@ -35,6 +35,7 @@ export const validationChangePasswordschema = z.object({
 })
 
 const cartItemSchema = z.object({
+  product_id: z.int(),
   qty: z.number().int().min(1),
   size: z.string().trim().optional(),
   color: z.string().trim().optional()

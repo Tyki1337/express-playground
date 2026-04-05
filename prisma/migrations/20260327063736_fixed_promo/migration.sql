@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Promo" ALTER COLUMN "exp" DROP NOT NULL;
