@@ -2,12 +2,12 @@ import passport from "#/utils/passport.js"
 import {prisma} from "#/lib/prisma.js"
 import bcrypt from "bcryptjs"
 import {NextFunction, Request, Response} from "express"
-import { AppError, getErrorMessage } from "#utils/errorRelated.js"
+import { AppError} from "#utils/errorRelated.js"
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   const user : RawUser = req.body
   const userHash = bcrypt.hashSync(user.password, 10)
-  const createdUser: Express.SafeUser = await prisma.user.create({
+  const createdUser = await prisma.user.create({
     data:{
       username: user.username,
       hash: userHash,
@@ -15,7 +15,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }, 
     select:{id: true, username: true, role: true, email: true}
   })
-  req.logIn(createdUser, (err: AppError)=> {
+  req.logIn(createdUser as Express.User, (err: AppError)=> {
     if (err) throw new AppError("Authentification error", 500)
   })
   res.status(201).json(createdUser)
@@ -29,6 +29,7 @@ if(req.user)
 else 
   return next(new AppError("Not authorized", 401))
 }
+
 
 export const authenticate = (strategy: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -45,7 +46,7 @@ export const authenticate = (strategy: string) => {
   }
 }
 
-export const isAuth = (req: Request, res: Response, next: NextFunction) => {
+export const isAuth = (req: Request, _: Response, next: NextFunction) => {
   if (!req.isAuthenticated()) return next(new AppError("Not authorized", 403))
   next()
 }

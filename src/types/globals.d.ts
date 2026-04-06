@@ -1,4 +1,5 @@
 import { UserModel as PrismaUser } from "#/generated/models/User.js"
+import { Prisma } from "#generated/browser.ts"
 import { Cart, Product } from "#generated/client.js"
 import { Optional } from "@prisma/client/runtime/client"
 declare global{
@@ -8,10 +9,11 @@ declare global{
     email?: string,
     secondName?: string
   }
-  
+  namespace db{
+    type User = Prisma.UserGetPayload<{include: {cart: true}}>
+  }
   namespace Express{
-    type DBuser = Optional<Omit<PrismaUser, 'createdAt'>, 'secondName' | 'email'> 
-    type SafeUser = Omit<DBuser, "hash">
+    type SafeUser = Pick<db.User, "id" | "username" | "role"> & Partial<Pick<db.User, "cart" | "email" | "secondName">>
     interface User extends SafeUser {}
     interface Request{
       user?: User

@@ -9,7 +9,7 @@ passport.serializeUser((user: Express.User, done) => {
 
 passport.deserializeUser(async (id: number, done) => {
   try {
-    const findUser: Express.User | null = await prisma.user.findUnique({
+    const findUser = await prisma.user.findUnique({
       where: { id }, select: { id: true, username: true, role: true}
     })
     if (!findUser) return done(null, false)
@@ -23,8 +23,8 @@ passport.deserializeUser(async (id: number, done) => {
 passport.use(
   new Strategy({usernameField: 'email'}, async (email, password, done) => {
     try {
-      const findUser: Express.DBuser | null = await prisma.user.findUnique(
-        { where: { email }, select: { id: true, username: true, hash: true  , role: true } })
+      const findUser = await prisma.user.findUnique(
+        { where: { email }, select: { id: true, username: true, hash: true  , role: true, cart:true } })
 
       if (!findUser) return done(null, false)
 
