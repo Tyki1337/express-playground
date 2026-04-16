@@ -6,11 +6,15 @@ import "dotenv"
 import cors from "cors"
 import { CorsOptions } from "cors";
 import { AppError } from "#utils/errorRelated.js";
+import path from "path"
+import { fileURLToPath } from "node:url";
+
 
 
 const app = express();
 const PORT = 3000
 const whitelist = ['http://localhost:3000']
+const dirname = path.dirname(fileURLToPath(import.meta.url))
 const corsOptions : CorsOptions = {
   origin: (origin, callback) =>{
     if(!origin || whitelist.includes(origin)){
@@ -32,9 +36,11 @@ app.use(session({
   saveUninitialized: false,
   resave: false,
   cookie: {
-    maxAge: 60000 * 60
+    maxAge: 60000 * 60,
+    httpOnly: true
   }
 }))
+app.use(express.static(path.join(dirname, "public")))
 app.use(passport.initialize())
 app.use(passport.session())
 app.use(router)
