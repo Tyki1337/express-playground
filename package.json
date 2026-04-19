@@ -19,7 +19,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "install": "^0.13.0",
-    "pg": "^8.19.0"
+    "pg": "^8.19.0",
+    "redis": "^5.12.1"
   },
   "name": "express_playground",
   "version": "1.0.0",
