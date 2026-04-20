@@ -57,3 +57,4 @@ export const orderSchema = z.object({
   delivery_adress: z.string()
 })
 export type CartBody = z.infer<typeof CartSchema>
+export type CartItem = z.infer<typeof cartItemSchema>

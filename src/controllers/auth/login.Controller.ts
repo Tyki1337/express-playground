@@ -21,22 +21,25 @@ const changePassword = async (req: Request, res: Response, next: NextFunction) =
   validateBody(validationChangePasswordschema)
   const {current_password, new_password} = req.body
   if(!req.user){
-    throw new AppError("Login first", 403)
+    throw new AppError("Not authorized", 403)
   }
   const dbHash  = await prisma.user.findUniqueOrThrow({
     where: {id: req.user.id},
     select:{hash:true}
   })
+
   const isPasswordCorrect = await bcrypt.compare(current_password, dbHash.hash)
     if(!isPasswordCorrect){
     throw new AppError("Password is not correct", 400)
     }
+
     await prisma.user.update({
       where: {id: req.user.id},
       data:{
         hash: await bcrypt.hash(new_password, 10)
       }
     })
+
     return res.status(200).json({"message": "ok"})
   }
   

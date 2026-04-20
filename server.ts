@@ -3,13 +3,14 @@ import express, {Response, Request, NextFunction } from "express"
 import router from "./src/routers/barrel.js"
 import session from "express-session";
 import passport from "passport"
-import "dotenv"
+import "#/utils/passport.ts"
 import cors from "cors"
 import { CorsOptions } from "cors";
 import { AppError } from "#utils/errorRelated.js";
 import path from "path"
 import { fileURLToPath } from "node:url";
 import client from "#/redis/client.js";
+import {RedisStore} from "connect-redis"
 
 
 
@@ -40,7 +41,8 @@ app.use(session({
   cookie: {
     maxAge: 60000 * 60,
     httpOnly: true
-  }
+  },
+  store: new RedisStore({client, prefix: 'session:'})
 }))
 app.use(express.static(path.join(dirname, "public")))
 app.use(passport.initialize())
@@ -63,5 +65,3 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) =>{
 app.listen(PORT, ()=>{
   console.log("Server ready")
 })
-const data = await client.hGet("sample_session:012345678", "user_id")
-console.log(data)
