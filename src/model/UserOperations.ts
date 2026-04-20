@@ -9,7 +9,7 @@ return newUser
 }
 
 export const sendUserData = async(username: string)=>{
-return await prisma.user.findUnique({
+return await prisma.user.findFirst({
   where:{
     username: username
   },
@@ -28,11 +28,11 @@ return await prisma.user.findMany()
 
 export const deleteUser = async (id: number) : Promise<{"message": string}> =>{
   try{
-    const message = {"message": "delete sucessful"}
     await prisma.user.delete({where: {id}})
+    const message = {"message": "delete sucessful"}
     return message
   }
-catch(err){
+catch(err){ 
    throw new Error("Failed to delete user from db")
   }
 } 

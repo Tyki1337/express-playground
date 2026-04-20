@@ -16,7 +16,8 @@ declare global{
     type SafeUser = Pick<db.User, "id" | "username" | "role"> & Partial<Pick<db.User, "cart" | "email" | "secondName">>
     interface User extends SafeUser {}
     interface Request{
-      user?: User
+      user?: User,
+      session: any
     }
   }
 }

@@ -24,10 +24,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
 
 export const getInfo = async (req: Request, res: Response, next: NextFunction) => {
-if(req.user)
   return res.json(req.user)
-else 
-  return next(new AppError("Not authorized", 401))
 }
 
 
@@ -47,7 +44,7 @@ export const authenticate = (strategy: string) => {
 }
 
 export const isAuth = (req: Request, _: Response, next: NextFunction) => {
-  if (!req.isAuthenticated()) return next(new AppError("Not authorized", 403))
+  if (!req.user) return next(new AppError("Not authorized", 401))
   next()
 }
 

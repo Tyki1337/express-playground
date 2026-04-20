@@ -4,20 +4,11 @@ import { prisma } from "#/lib/prisma.js"
 import bcrypt from "bcryptjs"
 
 passport.serializeUser((user: Express.User, done) => {
-  done(null, user.id)
+  done(null, user)
 })
 
-passport.deserializeUser(async (id: number, done) => {
-  try {
-    const findUser = await prisma.user.findUnique({
-      where: { id }, select: { id: true, username: true, role: true}
-    })
-    if (!findUser) return done(null, false)
-    done(null, findUser)
-  }
-  catch (err) {
-    done(err)
-  }
+passport.deserializeUser((user: Express.User, done) => {
+    done(null, user)
 })
 
 passport.use(
