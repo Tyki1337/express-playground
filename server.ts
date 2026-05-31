@@ -7,8 +7,6 @@ import "#/utils/passport.ts"
 import cors from "cors"
 import { CorsOptions } from "cors";
 import { AppError } from "#utils/errorRelated.js";
-import path from "path"
-import { fileURLToPath } from "node:url";
 import client from "#/redis/client.js";
 import {RedisStore} from "connect-redis"
 
@@ -17,7 +15,7 @@ import {RedisStore} from "connect-redis"
 const app = express();
 const PORT = 3000
 const whitelist = ['http://localhost:3000']
-const dirname = path.dirname(fileURLToPath(import.meta.url))
+
 const corsOptions : CorsOptions = {
   origin: (origin, callback) =>{
     if(!origin || whitelist.includes(origin)){
@@ -32,11 +30,12 @@ const corsOptions : CorsOptions = {
   allowedHeaders: ['Content-Type', "Authorization"]
   
 }
+
 app.use(cors(corsOptions))
 app.use(express.json())
 app.use(session({
   secret: process.env.SESSION_SECRET || "backup-key",
-  saveUninitialized: false,
+  saveUninitialized: true,
   resave: false,
   cookie: {
     maxAge: 60000 * 60,
@@ -44,12 +43,14 @@ app.use(session({
   },
   store: new RedisStore({client, prefix: 'session:'})
 }))
-app.use(express.static(path.join(dirname, "public")))
+
 app.use(passport.initialize())
 app.use(passport.session())
+
 app.use(router)
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) =>{
+// Error handler
+app.use((err: AppError, req: Request, res: Response, next: NextFunction) =>{
 
   const status = err.statusCode || 500
   const message = err.message || "Server error"

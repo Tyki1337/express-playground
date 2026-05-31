@@ -1,0 +1,6 @@
+node_modules
+.env
+.vscode
+test.ts
+.gitignore
+docker-compose.yaml

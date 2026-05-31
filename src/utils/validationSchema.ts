@@ -3,7 +3,7 @@ import * as z from "zod"
 export const validationUserSchema = z.object({
   username: z.string().min(5).max(10),
   password: z.string().min(5).max(10),
-  email: z.email().optional(),
+  email: z.email(),
   secondName: z.string().max(20).optional()
 })
 
@@ -56,5 +56,9 @@ export const orderSchema = z.object({
   promocode: z.string().optional(),
   delivery_adress: z.string()
 })
+
+export const loginSchema = validationUserSchema.pick({password: true, email: true})
+export type loginType = z.infer<typeof loginSchema>
+
 export type CartBody = z.infer<typeof CartSchema>
 export type CartItem = z.infer<typeof cartItemSchema>

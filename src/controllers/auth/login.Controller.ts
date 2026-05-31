@@ -1,16 +1,20 @@
 import { AppError, getErrorMessage } from "#utils/errorRelated.js"
 import { Request, Response, NextFunction } from "express"
 import { validateBody } from "#middleware/validationMiddleware.js"
-import { validationChangePasswordschema } from "#utils/validationSchema.js"
+import { loginSchema, validationChangePasswordschema } from "#utils/validationSchema.js"
 import bcrypt from "bcryptjs"
 import { prisma } from "#/lib/prisma.js"
+import { checkCredentials } from "#utils/dbUtils.js"
 
 const logOut = (req: Request, res: Response, next: NextFunction) => {
   if(!req.user){
     next(new AppError("User is not authenticated", 403))
   }
+  req.logOut((err) => {
+    if (err) throw new AppError(getErrorMessage(err), 500)
+  })
   req.session.destroy((err: Error) =>{
-    if (err) return next(new AppError( getErrorMessage(err), 500))
+    if (err) return next(new AppError(getErrorMessage(err), 500))
   }
 )
 res.clearCookie('connect.sid')
@@ -25,7 +29,7 @@ const changePassword = async (req: Request, res: Response, next: NextFunction) =
   }
   const dbHash  = await prisma.user.findUniqueOrThrow({
     where: {id: req.user.id},
-    select:{hash:true}
+    select:{hash: true}
   })
 
   const isPasswordCorrect = await bcrypt.compare(current_password, dbHash.hash)
@@ -41,5 +45,24 @@ const changePassword = async (req: Request, res: Response, next: NextFunction) =
     })
 
     return res.status(200).json({"message": "ok"})
+  }
+  
+  export const logIn = async (req: Request, res: Response, next: NextFunction) =>{
+    validateBody(loginSchema)
+    const {email, password} = req.body
+  const result = await checkCredentials(email, password, {email: true, username: true, id: true})
+
+    if (!result) return res.status(401).json({message: "Invalid credentials"})
+
+    await new Promise<void>((resolve, reject) =>{
+      req.logIn(result, (err: AppError)=> {
+        if (err) reject(new AppError("Authentication error", 500))
+        resolve()
+      })
+  })
+    return res.status(200).json({user: {
+    name: result.username,
+    email: result.email
+    }})
   }
   

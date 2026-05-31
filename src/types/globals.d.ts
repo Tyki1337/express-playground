@@ -6,14 +6,15 @@ declare global{
   interface RawUser {
     password: string,
     username: string,
-    email?: string,
+    email: string,
     secondName?: string
   }
   namespace db{
     type User = Prisma.UserGetPayload<{include: {cart: true}}>
   }
   namespace Express{
-    type SafeUser = Pick<db.User, "id" | "username" | "role"> & Partial<Pick<db.User, "cart" | "email" | "secondName">>
+    type SafeUser = Pick<db.User, "id" | "username" | "email"> & Partial<Pick<db.User, "cart" | "secondName" | "role">>
+    type SessionUser = Pick<SafeUser, "id">
     interface User extends SafeUser {}
     interface Request{
       user?: User,

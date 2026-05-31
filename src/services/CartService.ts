@@ -1,81 +1,98 @@
 import client from "#/redis/client.js"
 import {prisma} from "#/lib/prisma.js"
 import { CartItem } from "#/utils/validationSchema.js"
-
-  export const ProcessCart = async (items: CartItem[], userId: number ) =>{
-  const productIds = [...new Set(items.map(i => i.product_id))]
-  const products = await checkItems(productIds)
-  const productMap = Object.fromEntries(products.map(i => [i.id, i]))
-  const response = items.map(item => ({
-    product_id: item.product_id,
-    qty: item.qty,
-    size: item.size ?? null,
-    color: item.color ?? null,
-    price: productMap[item.product_id].price,
-    rating: productMap[item.product_id].rating,
-    title: productMap[item.product_id].title,
-  }))
-  const redisKey = `cart:user:${userId}`
-  const pipeline = client.multi()
-  const cartItems = await client.hGetAll(redisKey)
-  const userItems = Object.entries(cartItems).map(([id, data]) => ({
-    product_id: id,
-    ...JSON.parse(data)
-  }))
-  items.forEach(i => {
-    pipeline.hSet(redisKey, i.product_id, JSON.stringify({
-    qty: i.qty,
-    size: i.size ?? null,
-    color: i.color ?? null
-    }))
-  })
-
-  pipeline.expire(redisKey, 60 * 60 * 24)
-  await pipeline.exec()
-  return response
-  }
+import { Product } from "#generated/client.js"
   
-  const addToGuestCart = async(sid: number, items: CartItem[])=>{
+  export const addToGuestCart = async(sid: number | string, items: CartItem[])=>{
     const redisKey = `cart:guest:${sid}`
-    const oldCartItems = await client.hGetAll(redisKey)
-    const productsId = [...new Set(items.map(i => i.product_id))]
-    const _ = await checkItems(productsId)
-    const map = new Map<string, CartItem>()
-    Object.entries(oldCartItems).forEach(([id, data])=>{
-      const parsed: Omit<CartItem, 'product_id'> = JSON.parse(data)
-      map.set(`${id}-${parsed.size}-${parsed.color}`, JSON.parse(data))
-    })
-    items.forEach(i =>{
-      const key = `${i.product_id}-${i.size}-${i.color}`
-      if(map.has(key)){
-        const existing = map.get(key)!
-        existing.qty += i.qty
-      }
-      else{
-        map.set(key, i)
-      }
-    })
-    const response = Array.from(map.values())
-    updateRedis(redisKey, sid, response)
-    await ProcessCart(response, sid)
-    
+    const existingItems = await checkItems([...new Set(items.map(i => i.product_id))])
+    const mergedCart = await mergeCart(redisKey, items)
+    await updateRedis(redisKey, mergedCart)
+    const formattedCart = formatCart(mergedCart, existingItems)
+    return formattedCart
   }
-  const checkItems = async (ids: number[]) => {
+  export const checkItems = async (ids: number[]) => {
+    const uniqueIds = [...new Set(ids)]
     const existingItems = await prisma.product.findMany({
-      where: {id: {in: ids}}})
-    if(ids.length !== existingItems.length){
+      where: {id: 
+        {in: uniqueIds}}})
+
+    if(uniqueIds.length !== existingItems.length){
+
     const foundIds = existingItems.map(i => i.id)
-    const missingProducts = ids.filter(i=> !foundIds.includes(i))
+    const missingProducts = uniqueIds.filter(i=> !foundIds.includes(i))
     throw new AppError(`Missing products: ${missingProducts.join(", ")}`)
+
   }
+
   return existingItems
   }
 
-  const updateRedis = async (redisKey: string, id: string | number, items: any)=>{
+  export const updateRedis = async (redisKey: string, items: CartItem[])=>{
     const pipeline = client.multi()
     pipeline.del(redisKey)
     items.forEach(i =>{
       pipeline.hSet(redisKey, `${i.product_id}-${i.size}-${i.color}`, JSON.stringify(i))
     })
+    if(redisKey.split(':')[1] === 'guest') {
+      pipeline.expire(redisKey, 60 * 60 * 24)
+    }
+    else {
+      pipeline.expire(redisKey, 60 * 60 * 24 * 30)
+    }
     await pipeline.exec()
   }
+
+  export const formatCart = async (items: CartItem[], dbItems: Product[])=>{
+    const productMap = Object.fromEntries(dbItems.map(i => [i.id, i]))
+    return items.map(i =>({
+      product_id: i.product_id,
+      qty: i.qty,
+      size: i.size && null,
+      color: i.color && null,
+      price: productMap[i.product_id].price,
+      rating: productMap[i.product_id].rating,
+      title: productMap[i.product_id].title
+    }))
+  }
+
+  export const mergeCart = async (redisKey: string, items: CartItem[])  => {
+    const oldRedisCart = await client.hGetAll(redisKey)
+    const cartMap = new Map<string, CartItem>()
+    Object.entries(oldRedisCart).forEach(([id, data])=>{
+      cartMap.set(id, JSON.parse(data))
+    })
+
+    items.forEach(i => {
+      const id = `${i.product_id}-${i.size}-${i.color}`
+      if(cartMap.has(id)) {
+        const exItem = cartMap.get(id)!
+        exItem.qty += i.qty
+      }
+      else{
+        cartMap.set(id, i)
+      }
+    });
+    return Array.from(cartMap).map(([id, data]) => data)
+      
+    }
+    export const getRedisKey = (userId?: number, sessionId?: string) => 
+      userId ? `cart:user:${userId}` : `cart:guest:${sessionId}`
+
+    export const getSumAndCount = (cart: Awaited<ReturnType<typeof formatCart>>) =>{
+      const sum = cart.reduce((sum, i) => sum + i.qty * i.price, 0)
+      const count = cart.reduce((sum, i) => sum + i.qty, 0)
+      return {sum, count}
+    }
+
+    const getCartSummary = async (redisKey: string, withStats: boolean) => {
+      const updatedCart = client.hGetAll(redisKey)
+
+      const items: CartItem[] = Object.values(updatedCart).map(data => JSON.parse(data))
+      const dbItems = await checkItems(items.map(i => i.product_id))
+      const formattedCart = await formatCart(items, dbItems)
+
+      return {formattedCart, ...(withStats ? getSumAndCount(formattedCart) : {})}
+    }
+    
+  

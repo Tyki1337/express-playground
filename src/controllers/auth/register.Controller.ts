@@ -1,12 +1,11 @@
-import passport from "#/utils/passport.js"
 import {prisma} from "#/lib/prisma.js"
 import bcrypt from "bcryptjs"
-import {NextFunction, Request, Response} from "express"
+import {NextFunction, Request, response, Response} from "express"
 import { AppError} from "#utils/errorRelated.js"
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   const user : RawUser = req.body
-  const userHash = bcrypt.hashSync(user.password, 10)
+  const userHash = await bcrypt.hash(user.password, 10)
   const createdUser = await prisma.user.create({
     data:{
       username: user.username,
@@ -15,10 +14,18 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }, 
     select:{id: true, username: true, role: true, email: true}
   })
-  req.logIn(createdUser as Express.User, (err: AppError)=> {
-    if (err) throw new AppError("Authentification error", 500)
+  await new Promise<void>((resolve, reject) => {
+    req.logIn(createdUser, (err: AppError)=> {
+    if (err) reject(new AppError("Authentification error", 500))
+    else resolve()
   })
-  res.status(201).json(createdUser)
+})
+  res.status(201).json({
+    user: {
+      name: createdUser.username,
+      email: createdUser.email
+    }
+  })
   }
 
 
@@ -27,21 +34,6 @@ export const getInfo = async (req: Request, res: Response, next: NextFunction) =
   return res.json(req.user)
 }
 
-
-export const authenticate = (strategy: string) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate(strategy, (err: AppError, user: Express.User) => {
-
-      if(err) return next(new AppError(err.message, 500))
-      if (!user) return next(new AppError("Invalid credentials", 401))
-        
-      req.logIn(user, (err: AppError) => {
-        if (err) return next(new AppError(err.message, 500))
-        res.json({ message: "Success", user})
-      })
-    })(req, res, next)
-  }
-}
 
 export const isAuth = (req: Request, _: Response, next: NextFunction) => {
   if (!req.user) return next(new AppError("Not authorized", 401))
