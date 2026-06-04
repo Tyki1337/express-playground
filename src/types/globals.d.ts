@@ -21,5 +21,25 @@ declare global{
       session: any
     }
   }
+  namespace Cart{
+    type CartRes = {
+    sum?: number;
+    count?: number;
+    items: {
+        product_id: number;
+        qty: number;
+        size: "" | null | undefined;
+        color: "" | null | undefined;
+        price: number;
+        rating: number | null
+        title: string | null;
+    }[] 
+  } | Fault.resMessage
+  }
+  namespace Fault{
+    type resMessage = {
+      message: string
+    }
+  }
 }
 export{}

@@ -3,14 +3,6 @@ import {prisma} from "#/lib/prisma.js"
 import { CartItem } from "#/utils/validationSchema.js"
 import { Product } from "#generated/client.js"
   
-  export const addToGuestCart = async(sid: number | string, items: CartItem[])=>{
-    const redisKey = `cart:guest:${sid}`
-    const existingItems = await checkItems([...new Set(items.map(i => i.product_id))])
-    const mergedCart = await mergeCart(redisKey, items)
-    await updateRedis(redisKey, mergedCart)
-    const formattedCart = formatCart(mergedCart, existingItems)
-    return formattedCart
-  }
   export const checkItems = async (ids: number[]) => {
     const uniqueIds = [...new Set(ids)]
     const existingItems = await prisma.product.findMany({
@@ -43,7 +35,7 @@ import { Product } from "#generated/client.js"
     await pipeline.exec()
   }
 
-  export const formatCart = async (items: CartItem[], dbItems: Product[])=>{
+  const formatCart = async (items: CartItem[], dbItems: Product[])=>{
     const productMap = Object.fromEntries(dbItems.map(i => [i.id, i]))
     return items.map(i =>({
       product_id: i.product_id,
@@ -85,14 +77,20 @@ import { Product } from "#generated/client.js"
       return {sum, count}
     }
 
-    const getCartSummary = async (redisKey: string, withStats: boolean) => {
-      const updatedCart = client.hGetAll(redisKey)
+    export const getCartSummary = async (redisKey: string) => {
+      const redisCart = client.hGetAll(redisKey)
 
-      const items: CartItem[] = Object.values(updatedCart).map(data => JSON.parse(data))
+      const items: CartItem[] = Object.values(redisCart).map(data => JSON.parse(data))
       const dbItems = await checkItems(items.map(i => i.product_id))
       const formattedCart = await formatCart(items, dbItems)
 
-      return {formattedCart, ...(withStats ? getSumAndCount(formattedCart) : {})}
+      return formattedCart
+    }
+
+    export const getCartStats = async (redisKey: string) =>{
+      const cart = await getCartSummary(redisKey)
+      const stats = getSumAndCount(cart)
+      return {items: cart, ...stats}
     }
     
   
