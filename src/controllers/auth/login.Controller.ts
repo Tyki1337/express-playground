@@ -1,28 +1,11 @@
-import { AppError, getErrorMessage } from "#utils/errorRelated.js"
-import { Request, Response, NextFunction } from "express"
-import { validateBody } from "#middleware/validationMiddleware.js"
-import { loginSchema, validationChangePasswordschema } from "#utils/validationSchema.js"
+import { AppError } from "#utils/errorRelated.js"
+import { Request, Response } from "express"
+import { UserType, ChangePasswordType } from "#utils/validationSchema.js"
 import bcrypt from "bcryptjs"
 import { prisma } from "#/lib/prisma.js"
-import { checkCredentials } from "#utils/dbUtils.js"
+import { signJwt } from "#utils/jwt.js"
 
-const logOut = (req: Request, res: Response, next: NextFunction) => {
-  if(!req.user){
-    next(new AppError("User is not authenticated", 403))
-  }
-  req.logOut((err) => {
-    if (err) throw new AppError(getErrorMessage(err), 500)
-  })
-  req.session.destroy((err: Error) =>{
-    if (err) return next(new AppError(getErrorMessage(err), 500))
-  }
-)
-res.clearCookie('connect.sid')
-res.status(200).json({"message": "ok"})
-}
-
-const changePassword = async (req: Request, res: Response, next: NextFunction) =>{
-  validateBody(validationChangePasswordschema)
+export const changePassword = async (req: Request<never, never, ChangePasswordType>, res: Response) =>{
   const {current_password, new_password} = req.body
   if(!req.user){
     throw new AppError("Not authorized", 403)
@@ -47,22 +30,44 @@ const changePassword = async (req: Request, res: Response, next: NextFunction) =
     return res.status(200).json({"message": "ok"})
   }
   
-  export const logIn = async (req: Request, res: Response, next: NextFunction) =>{
-    validateBody(loginSchema)
-    const {email, password} = req.body
-  const result = await checkCredentials(email, password, {email: true, username: true, id: true})
-
-    if (!result) return res.status(401).json({message: "Invalid credentials"})
-
-    await new Promise<void>((resolve, reject) =>{
-      req.logIn(result, (err: AppError)=> {
-        if (err) reject(new AppError("Authentication error", 500))
-        resolve()
-      })
-  })
-    return res.status(200).json({user: {
-    name: result.username,
-    email: result.email
-    }})
+  export const logIn = async (req: Request<never, never, Pick<UserType, "email" | "password">>, res: Response) =>{
+  const {email, password} = req.body
+  const result = await prisma.user.findUniqueOrThrow({
+    select: {
+    hash: true,
+    email: true,
+    id: true,
+    role: true,
+    username: true
+  },
+  where: {
+    email
   }
+})
+const isMatch = await bcrypt.compare(password, result.hash)
+
+if (!isMatch) return res.status(401).json({message: "Invalid credentials"})
+
+
+const token = signJwt(
+  {
+    id: result.id,
+    email: result.email,
+    username: result.username,
+    role: result.role
+  },
+)
+return res.status(200).json({token: `Bearer ${token}`,
+  user:{
+    name: result.username,
+    email: result.email,
+    role: result.role
+  }}
+)
+
+}
+  export const getInfo = (req: Request, res: Response) => {
+  return res.json(req.user)
+}
+
   

@@ -1,9 +1,10 @@
 import { Router } from "express"
-import * as loginController from "../../controllers/auth/register.Controller.js"
+import { validateBody } from "#middleware/validationMiddleware.js"
+import { logIn } from "#controllers/auth/login.Controller.js"
+import { LoginZod } from "#utils/validationSchema.js"
 
 const routerLogin = Router()
 
-routerLogin.get("/api/login", loginController.isAuth, loginController.getInfo)
-routerLogin.post("/api/login", loginController.authenticate("local"))
+routerLogin.post("/api/auth/login", validateBody(LoginZod), logIn)
 
 export default routerLogin

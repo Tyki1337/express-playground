@@ -1,96 +1,102 @@
-import client from "#/redis/client.js"
-import {prisma} from "#/lib/prisma.js"
-import { CartItem } from "#/utils/validationSchema.js"
-import { Product } from "#generated/client.js"
+import client from "#/redis/client.js";
+import { prisma } from "#/lib/prisma.js";
+import { CartItemType } from "#/utils/validationSchema.js";
+import { Product } from "#generated/client.js";
+import { AppError } from "#/utils/errorRelated.js";
+
+export interface FormattedCartItem extends CartItemType {
+  price: number;
+  rating: number;
+  title: string | null;
+}
+
+export const getRedisKey = (userId: number | string): string => `cart:user:${userId}`;
+
+export const checkItems = async (ids: number[]): Promise<Product[]> => {
+  const uniqueIds = [...new Set(ids)];
+  if (!uniqueIds.length) return [];
+
+  const existingItems = await prisma.product.findMany({
+    where: { id: { in: uniqueIds } }
+  });
+
+  if (uniqueIds.length !== existingItems.length) {
+    const foundIds = existingItems.map(i => i.id);
+    const missingProducts = uniqueIds.filter(id => !foundIds.includes(id));
+    throw new AppError(`Missing products: ${missingProducts.join(", ")}`, 404);
+  }
+
+  return existingItems;
+};
+
+export const updateRedis = async (redisKey: string, items: CartItemType[]): Promise<void> => {
+  const pipeline = client.multi();
+  pipeline.del(redisKey);
   
-  export const checkItems = async (ids: number[]) => {
-    const uniqueIds = [...new Set(ids)]
-    const existingItems = await prisma.product.findMany({
-      where: {id: 
-        {in: uniqueIds}}})
+  items.forEach(i => {
+    pipeline.hSet(redisKey, `${i.productId}-${i.size || 'default'}-${i.color || 'default'}`, JSON.stringify(i));
+  });
 
-    if(uniqueIds.length !== existingItems.length){
+  pipeline.expire(redisKey, 60 * 60 * 24 * 30)
+  await pipeline.exec();
+};
 
-    const foundIds = existingItems.map(i => i.id)
-    const missingProducts = uniqueIds.filter(i=> !foundIds.includes(i))
-    throw new AppError(`Missing products: ${missingProducts.join(", ")}`)
-
-  }
-
-  return existingItems
-  }
-
-  export const updateRedis = async (redisKey: string, items: CartItem[])=>{
-    const pipeline = client.multi()
-    pipeline.del(redisKey)
-    items.forEach(i =>{
-      pipeline.hSet(redisKey, `${i.product_id}-${i.size}-${i.color}`, JSON.stringify(i))
-    })
-    if(redisKey.split(':')[1] === 'guest') {
-      pipeline.expire(redisKey, 60 * 60 * 24)
-    }
-    else {
-      pipeline.expire(redisKey, 60 * 60 * 24 * 30)
-    }
-    await pipeline.exec()
-  }
-
-  const formatCart = async (items: CartItem[], dbItems: Product[])=>{
-    const productMap = Object.fromEntries(dbItems.map(i => [i.id, i]))
-    return items.map(i =>({
-      product_id: i.product_id,
+const formatCart = (items: CartItemType[], dbItems: Product[]): FormattedCartItem[] => {
+  const productMap = Object.fromEntries(dbItems.map(i => [i.id, i]));
+  
+  return items.map(i => {
+    const dbProduct = productMap[i.productId];
+    return {
+      productId: i.productId,
       qty: i.qty,
-      size: i.size && null,
-      color: i.color && null,
-      price: productMap[i.product_id].price,
-      rating: productMap[i.product_id].rating,
-      title: productMap[i.product_id].title
-    }))
-  }
+      size: i.size,
+      color: i.color,
+      price: dbProduct ? dbProduct.price : 0,
+      rating: dbProduct ? dbProduct.rating : 0,
+      title: dbProduct ? dbProduct.title : "Unknown Product"
+    };
+  });
+};
 
-  export const mergeCart = async (redisKey: string, items: CartItem[])  => {
-    const oldRedisCart = await client.hGetAll(redisKey)
-    const cartMap = new Map<string, CartItem>()
-    Object.entries(oldRedisCart).forEach(([id, data])=>{
-      cartMap.set(id, JSON.parse(data))
-    })
+export const mergeCart = async (redisKey: string, items: CartItemType[]): Promise<CartItemType[]> => {
+  const oldRedisCart = await client.hGetAll(redisKey);
+  const cartMap = new Map<string, CartItemType>();
 
-    items.forEach(i => {
-      const id = `${i.product_id}-${i.size}-${i.color}`
-      if(cartMap.has(id)) {
-        const exItem = cartMap.get(id)!
-        exItem.qty += i.qty
-      }
-      else{
-        cartMap.set(id, i)
-      }
-    });
-    return Array.from(cartMap).map(([id, data]) => data)
-      
+  Object.entries(oldRedisCart).forEach(([id, data]) => {
+    cartMap.set(id, JSON.parse(data) as CartItemType);
+  });
+
+  items.forEach(i => {
+    const id = `${i.productId}-${i.size || 'default'}-${i.color || 'default'}`;
+    const exItem = cartMap.get(id);
+    if (exItem) {
+      exItem.qty += i.qty;
+    } 
+    else {
+      cartMap.set(id, { ...i });
     }
-    export const getRedisKey = (userId?: number, sessionId?: string) => 
-      userId ? `cart:user:${userId}` : `cart:guest:${sessionId}`
+  });
 
-    export const getSumAndCount = (cart: Awaited<ReturnType<typeof formatCart>>) =>{
-      const sum = cart.reduce((sum, i) => sum + i.qty * i.price, 0)
-      const count = cart.reduce((sum, i) => sum + i.qty, 0)
-      return {sum, count}
-    }
+  return Array.from(cartMap.values());
+};
 
-    export const getCartSummary = async (redisKey: string) => {
-      const redisCart = client.hGetAll(redisKey)
+export const getSumAndCount = (cart: FormattedCartItem[]) => {
+  const sum = cart.reduce((acc, i) => acc + i.qty * i.price, 0);
+  const count = cart.reduce((acc, i) => acc + i.qty, 0);
+  return { sum, count };
+};
 
-      const items: CartItem[] = Object.values(redisCart).map(data => JSON.parse(data))
-      const dbItems = await checkItems(items.map(i => i.product_id))
-      const formattedCart = await formatCart(items, dbItems)
+export const getCartSummary = async (redisKey: string): Promise<FormattedCartItem[]> => {
+  const redisCart = await client.hGetAll(redisKey);
+  const items = Object.values(redisCart).map(data => JSON.parse(data) as CartItemType);
+  if (!items.length) return [];
 
-      return formattedCart
-    }
+  const dbItems = await checkItems(items.map(i => i.productId));
+  return formatCart(items, dbItems);
+};
 
-    export const getCartStats = async (redisKey: string) =>{
-      const cart = await getCartSummary(redisKey)
-      const stats = getSumAndCount(cart)
-      return {items: cart, ...stats}
-    }
-    
-  
+export const getCartStats = async (redisKey: string) => {
+  const cart = await getCartSummary(redisKey);
+  const stats = getSumAndCount(cart);
+  return { items: cart, ...stats };
+};

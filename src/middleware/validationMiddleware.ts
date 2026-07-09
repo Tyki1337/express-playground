@@ -1,6 +1,6 @@
 import {Request, Response, NextFunction} from "express"
-import {ParamsDictionary} from "express-serve-static-core"
-import { ZodType } from "zod"
+import {ParamsDictionary, Query} from "express-serve-static-core"
+import { ZodType, ZodObject } from "zod"
 import { AppError } from "#utils/errorRelated.js"
 
 export const validateBody = (schema: ZodType ) => (req: Request, res: Response , next: NextFunction)=>{
@@ -18,5 +18,15 @@ if(!result.success){
   return next(new AppError(result.error.message, 400))
 }
 req.params = result.data as ParamsDictionary
+next()
+}
+
+export const validateQuery = (schema: ZodObject) =>
+  (req: Request, next: NextFunction) => {
+  const result = schema.safeParse(req.query)
+  if(!result.success){
+  return next(new AppError(result.error.message, 400))
+}
+req.query = result.data as Query
 next()
 }

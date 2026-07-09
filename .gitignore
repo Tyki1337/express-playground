@@ -5,3 +5,4 @@ src/generated
 dist
 src/redis
 test.ts
+eslint.config.js

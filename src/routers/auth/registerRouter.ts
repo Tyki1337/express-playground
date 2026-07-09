@@ -1,13 +1,11 @@
 import { Router } from "express"
-import * as register from "#/controllers/auth/register.Controller.js"
-import { errorHandler } from "#utils/errorRelated.js"
+import {register} from "#controllers/auth/register.Controller.js"
 import { validateBody } from "#middleware/validationMiddleware.js"
-import { validationUserSchema } from "#utils/validationSchema.js"
+import { RegisterZod } from "#utils/validationSchema.js"
 
 const routerRegister = Router()
 
-routerRegister.get("/api/register", register.isAuth, errorHandler(register.getInfo))
-routerRegister.post("/api/register", validateBody(validationUserSchema), errorHandler(register.register))
+routerRegister.post("/api/auth/register", validateBody(RegisterZod), register)
 
 
 export default routerRegister

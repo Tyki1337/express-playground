@@ -1,7 +1,6 @@
-import { UserModel as PrismaUser } from "#/generated/models/User.js"
-import { Prisma } from "#generated/browser.ts"
-import { Cart, Product } from "#generated/client.js"
-import { Optional } from "@prisma/client/runtime/client"
+import { User as PrismaUser } from "#generated/client.js"
+import jwt from "jsonwebtoken"
+import 'express-session'
 declare global{
   interface RawUser {
     password: string,
@@ -9,24 +8,21 @@ declare global{
     email: string,
     secondName?: string
   }
-  namespace db{
-    type User = Prisma.UserGetPayload<{include: {cart: true}}>
-  }
-  namespace Express{
-    type SafeUser = Pick<db.User, "id" | "username" | "email"> & Partial<Pick<db.User, "cart" | "secondName" | "role">>
-    type SessionUser = Pick<SafeUser, "id">
-    interface User extends SafeUser {}
-    interface Request{
-      user?: User,
-      session: any
+    type SafeUser = Pick<PrismaUser, "id" | "email" | "role">
+    interface JwtUser extends SafeUser, jwt.JwtPayload {
+      username?: PrismaUser["username"]
     }
+    namespace Express{
+      interface Request{
+        user?: JwtUser
+      }
   }
   namespace Cart{
-    type CartRes = {
+    export type CartRes = {
     sum?: number;
     count?: number;
     items: {
-        product_id: number;
+        productId: number;
         qty: number;
         size: "" | null | undefined;
         color: "" | null | undefined;
@@ -37,9 +33,16 @@ declare global{
   } | Fault.resMessage
   }
   namespace Fault{
-    type resMessage = {
+    export type resMessage = {
       message: string
     }
   }
+
 }
+//   declare module "express-session" {
+//   interface SessionData {
+//     userId?: string; 
+//     user?: SessionUser;
+//   }
+// }
 export{}

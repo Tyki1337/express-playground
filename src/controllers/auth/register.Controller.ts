@@ -1,10 +1,11 @@
 import {prisma} from "#/lib/prisma.js"
 import bcrypt from "bcryptjs"
-import {NextFunction, Request, response, Response} from "express"
-import { AppError} from "#utils/errorRelated.js"
+import {Request, Response} from "express"
+import { RegisterType } from "#utils/validationSchema.js"
+import { signJwt } from "#utils/jwt.js"
 
-export const register = async (req: Request, res: Response, next: NextFunction) => {
-  const user : RawUser = req.body
+export const register = async (req: Request<never, never, RegisterType>, res: Response) => {
+  const user = req.body
   const userHash = await bcrypt.hash(user.password, 10)
   const createdUser = await prisma.user.create({
     data:{
@@ -14,30 +15,14 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }, 
     select:{id: true, username: true, role: true, email: true}
   })
-  await new Promise<void>((resolve, reject) => {
-    req.logIn(createdUser, (err: AppError)=> {
-    if (err) reject(new AppError("Authentification error", 500))
-    else resolve()
-  })
-})
+  const token = signJwt(createdUser)
+  
   res.status(201).json({
+    token: `Bearer ${token}`,
     user: {
-      name: createdUser.username,
-      email: createdUser.email
+      email: createdUser.email,
+      username: createdUser.username,
+      id: createdUser.id,
+      role: createdUser.role
     }
-  })
-  }
-
-
-
-export const getInfo = async (req: Request, res: Response, next: NextFunction) => {
-  return res.json(req.user)
-}
-
-
-export const isAuth = (req: Request, _: Response, next: NextFunction) => {
-  if (!req.user) return next(new AppError("Not authorized", 401))
-  next()
-}
-
-
+  })}
