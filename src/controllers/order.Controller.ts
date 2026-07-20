@@ -1,16 +1,15 @@
-import { orderSchema } from "#utils/validationSchema.js"
+import { OrderType } from "#/types/order.types.js"
 import {Request, Response} from "express"
 import { prisma } from "#lib/prisma.js"
 import { validatePromocode } from "#utils/promocode.js"
-import { validateBody } from "#middleware/validationMiddleware.js"
-import * as z from "zod"
 import client from "#redis/client.js"
 import { getRedisKey } from "#services/CartService.js"
+import { checkUser } from "#utils/jwt.js"
 
-export const createOrder = async (req: Request, res: Response) =>{
-validateBody(orderSchema)
-  const {items, promocode, delivery_adress} = req.body as z.infer<typeof orderSchema>
-  const userId = req.user!.id
+export const createOrder = async (req: Request<never, never, OrderType>, res: Response) =>{
+  checkUser(req.user)
+  const {items, promocode, delivery_adress} = req.body
+  const userId = req.user.id
   const redisKey = getRedisKey(userId)
   
   const promo = promocode ? await validatePromocode(promocode) : null
@@ -24,7 +23,7 @@ validateBody(orderSchema)
   const finalPrice = promo ? Math.round(total * ((100 - promo.discount) / 100 )) : total
   const createdOrder = await prisma.order.create({
     data: {
-      userId: userId,
+      userId: userId, 
       total,
       totalFinal: finalPrice,
       address: delivery_adress ?? null,
@@ -52,9 +51,10 @@ validateBody(orderSchema)
 }
 
 export const getUserOrders = async (req: Request, res: Response) => {
+  checkUser(req.user)
   const orders = await prisma.order.findMany({
     where: {
-      id: req.user!.id
+      id: req.user.id
     },
     include:{
       OrderItem:{
@@ -69,7 +69,6 @@ export const getUserOrders = async (req: Request, res: Response) => {
     },
     orderBy: {createdAt: "desc"}
   })
-  await client.hDelAll(getRedisKey(req.user!.id), )
   return orders ? res.status(200).json(orders) : res.status(404).json({message: "Orders not found"})
 
 }

@@ -18,6 +18,6 @@ for (const key of requiredEnv) {
 export const config = {
   jwtSecret: process.env.JWT_SECRET as string,
   databaseUrl: process.env.DATABASE_URL as string,
-  port: process.env.PORT || 5000,
-  redisPassword: process.env.REDIS_PASSWORD as string,
+  port: process.env.PORT || 3000,
+  redisPassword: process.env.REDIS_PASSWORD as string
 };

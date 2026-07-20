@@ -1,14 +1,8 @@
 import client from "#/redis/client.js";
 import { prisma } from "#/lib/prisma.js";
-import { CartItemType } from "#/utils/validationSchema.js";
+import { CartItemType, FormattedCartItem } from "#/types/cart.types.js";
 import { Product } from "#generated/client.js";
-import { AppError } from "#/utils/errorRelated.js";
-
-export interface FormattedCartItem extends CartItemType {
-  price: number;
-  rating: number;
-  title: string | null;
-}
+import { AppError } from "#utils/errorRelated.js";
 
 export const getRedisKey = (userId: number | string): string => `cart:user:${userId}`;
 
@@ -49,8 +43,8 @@ const formatCart = (items: CartItemType[], dbItems: Product[]): FormattedCartIte
     return {
       productId: i.productId,
       qty: i.qty,
-      size: i.size,
-      color: i.color,
+      size: i.size ?? null,
+      color: i.color ?? null,
       price: dbProduct ? dbProduct.price : 0,
       rating: dbProduct ? dbProduct.rating : 0,
       title: dbProduct ? dbProduct.title : "Unknown Product"
@@ -81,8 +75,8 @@ export const mergeCart = async (redisKey: string, items: CartItemType[]): Promis
 };
 
 export const getSumAndCount = (cart: FormattedCartItem[]) => {
-  const sum = cart.reduce((acc, i) => acc + i.qty * i.price, 0);
-  const count = cart.reduce((acc, i) => acc + i.qty, 0);
+  const sum = cart.reduce((acc: number, i) => acc + i.qty * i.price, 0);
+  const count = cart.reduce((acc: number, i) => acc + i.qty, 0);
   return { sum, count };
 };
 

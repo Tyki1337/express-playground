@@ -1,8 +1,9 @@
 import "#/config/env.js"
+import "#/config/globals.ts"
 import express, {Response, Request, NextFunction } from "express"
 import router from "./src/routers/barrel.js"
 import passport from "passport"
-import { AppError } from "#utils/errorRelated.js";
+import { PrismaAppError } from "#utils/errorRelated.js";
 import cookieParser from "cookie-parser"
 
 const app = express();
@@ -16,20 +17,18 @@ app.use(passport.initialize())
 app.use(router)
 
 // Error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction): void =>{
-let status: number = 500;
-let message: string = "Unknown error"
-console.log(`[Error Debug] Класс: ${err.constructor.name} | Сообщение: ${err.message}`);
-if(err instanceof AppError){  
-  status = err.statusCode || 500
-  message = err.message || "Server error"
-}
+app.use((err: any, req: Request, res: Response, next: NextFunction) =>{
+const error = PrismaAppError.from(err)
 
-  console.error(err)
-  res.status(status).json({
+const statusCode = error.statusCode || 500
+const message = error.message || 'server error'
+
+console.error(error)
+
+  res.status(error.statusCode).json({
     status: "error",
-    statusCode: status,
-    message: message
+    statusCode,
+    message
   })
 })
 

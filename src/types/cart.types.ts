@@ -15,6 +15,14 @@ export const CartZod = z.object({
 
 export type CartRedisType = z.infer<typeof CartZod>;
 
+export interface FormattedCartItem extends Required<Omit<CartItemType, "size" | "color">> {
+  size: string | null
+  color: string | null
+  price: number;
+  rating: number;
+  title: string | null;
+}
+
 export interface ResMessage {
   message: string;
 }
@@ -22,13 +30,5 @@ export interface ResMessage {
 export type CartRes = {
   sum?: number;
   count?: number;
-  items: {
-    productId: number;
-    qty: number;
-    size: string | null | undefined;
-    color: string | null | undefined;
-    price: number;
-    rating: number | null;
-    title: string | null;
-  }[];
+  items: FormattedCartItem[];
 } | ResMessage;

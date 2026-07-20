@@ -1,4 +1,4 @@
-import { UserType } from "#utils/validationSchema.js"
+import { UserType } from "#/types/auth.types.js"
 import {Request, Response} from "express"
 import { prisma } from "#lib/prisma.js"
 export const getInfo = (req: Request, res: Response) => {

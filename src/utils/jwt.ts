@@ -1,6 +1,7 @@
 import {config} from "#/config/env.js"
 import {Request, Response, NextFunction} from "express"
 import jwt, { SignOptions } from "jsonwebtoken"
+import { JwtUser } from "#types/globals.js"
 
 export const checkJwt = (req: Request, res: Response, next: NextFunction): void=>{
   const authHeader = req.headers.authorization
@@ -15,7 +16,7 @@ export const checkJwt = (req: Request, res: Response, next: NextFunction): void=
     return next()
   }
   catch(err){
-    return next(new AppError("Invalid token", 401))
+    return next(new AppError("Invalid token", 401)) 
   }
   
 }
@@ -23,4 +24,10 @@ export const checkJwt = (req: Request, res: Response, next: NextFunction): void=
 export const signJwt = (body: JwtUser, expires: SignOptions["expiresIn"] = "1d") => {
   const token = jwt.sign(body, config.jwtSecret, {expiresIn: expires})
   return token
+}
+
+export function checkUser (user: unknown) : asserts user is JwtUser {
+  if (!user){    
+    throw new AppError("User not authenticated", 401)
+  }
 }

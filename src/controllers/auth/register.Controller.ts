@@ -1,7 +1,7 @@
 import {prisma} from "#/lib/prisma.js"
 import bcrypt from "bcryptjs"
 import {Request, Response} from "express"
-import { RegisterType } from "#utils/validationSchema.js"
+import { RegisterType } from "#/types/auth.types.js"
 import { signJwt } from "#utils/jwt.js"
 
 export const register = async (req: Request<never, never, RegisterType>, res: Response) => {
@@ -21,7 +21,7 @@ export const register = async (req: Request<never, never, RegisterType>, res: Re
     token: `Bearer ${token}`,
     user: {
       email: createdUser.email,
-      username: createdUser.username,
+      name: createdUser.username,
       id: createdUser.id,
       role: createdUser.role
     }

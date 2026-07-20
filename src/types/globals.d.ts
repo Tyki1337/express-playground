@@ -1,20 +1,14 @@
-import { User as PrismaUser } from "@prisma/client";
+import { User as PrismaUser } from "#/generated/client.ts";
 import jwt from "jsonwebtoken";
-
-declare global {
-  interface RawUser {
-    password: string;
-    username: string;
-    email: string;
-    secondName?: string;
-  }
 
   type SafeUser = Pick<PrismaUser, "id" | "email" | "role">;
 
-  interface JwtUser extends SafeUser, jwt.JwtPayload {
+  export type JwtUser = SafeUser & jwt.JwtPayload & {
     username?: PrismaUser["username"];
   }
 
+
+declare global {
   namespace Express {
     interface Request {
       user?: JwtUser;

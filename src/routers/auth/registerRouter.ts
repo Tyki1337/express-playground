@@ -1,11 +1,11 @@
 import { Router } from "express"
 import {register} from "#controllers/auth/register.Controller.js"
 import { validateBody } from "#middleware/validationMiddleware.js"
-import { RegisterZod } from "#utils/validationSchema.js"
+import { RegisterZod } from "#/types/auth.types.js"
 
-const routerRegister = Router()
+const router = Router()
 
-routerRegister.post("/api/auth/register", validateBody(RegisterZod), register)
+router.post("/auth/register", validateBody(RegisterZod), register)
 
 
-export default routerRegister
+export default router

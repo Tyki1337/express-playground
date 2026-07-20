@@ -2,11 +2,13 @@ import { RequestHandler } from "express";
 import client from "#redis/client.js";
 import { AppError } from "#utils/errorRelated.js";
 import { mergeCart, getCartStats, getRedisKey, updateRedis } from "#services/CartService.js";
-import { CartItemType } from "#utils/validationSchema.js";
+import { CartItemType, CartRes } from "#/types/cart.types.js";
+import { checkUser } from "#utils/jwt.js";
 
 // GET /api/cart
-export const getCartController: RequestHandler = async (req, res, next) => {
-  const redisKey = getRedisKey(req.user!.id);
+export const getCartController: RequestHandler = async (req, res) => {
+  checkUser(req.user)
+  const redisKey = getRedisKey(req.user.id);
 
   const cart = await client.hGetAll(redisKey);
   if (Object.keys(cart).length === 0) {
@@ -18,7 +20,8 @@ export const getCartController: RequestHandler = async (req, res, next) => {
 };
 
 // POST /api/cart/add
-export const addItemController: RequestHandler<never, never, CartItemType[]> = async (req, res, next) => {
+export const addItemController: RequestHandler<never, CartRes, CartItemType[]> = async (req, res) => {
+  checkUser(req.user)
   const redisKey = getRedisKey(req.user.id);
   const items = req.body;
 
@@ -30,7 +33,8 @@ export const addItemController: RequestHandler<never, never, CartItemType[]> = a
 };
 
 // PUT /api/cart/update/:productId
-export const updateProductQtyController: RequestHandler<{ productId: string }, never, { qty: number }> = async (req, res, next) => {
+export const updateProductQtyController: RequestHandler<{ productId: string }, CartRes, { qty: number }> = async (req, res, next) => {
+  checkUser(req.user)
   const { productId } = req.params;
   const { qty } = req.body;
 
@@ -61,6 +65,7 @@ export const updateProductQtyController: RequestHandler<{ productId: string }, n
 
 // DELETE /api/cart/:productId
 export const deleteProductController: RequestHandler<{ productId: string }> = async (req, res, next) => {
+  checkUser(req.user)
   const productId = Number(req.params.productId);
   const redisKey = getRedisKey(req.user.id);
   
@@ -78,10 +83,10 @@ export const deleteProductController: RequestHandler<{ productId: string }> = as
 };
 
 // POST /api/cart/merge
-// Вызывается фронтендом сразу же после успешного POST /api/auth/login
-export const mergeCartController: RequestHandler<never, never, { items: CartItemType[] }> = async (req, res, next) => {
-  const redisKey = getRedisKey(req.user!.id);
-  const { items } = req.body; // Массив из localStorage гостя
+export const mergeCartController: RequestHandler<never, CartRes, { items: CartItemType[] }> = async (req, res) => {
+  checkUser(req.user)
+  const redisKey = getRedisKey(req.user.id);
+  const { items } = req.body;
 
   if (!items || items.length === 0) {
     const response = await getCartStats(redisKey);

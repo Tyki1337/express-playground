@@ -1,15 +1,13 @@
 import { AppError } from "#utils/errorRelated.js"
 import { Request, Response } from "express"
-import { UserType, ChangePasswordType } from "#utils/validationSchema.js"
+import { UserType, ChangePasswordType } from "#/types/auth.types.js"
 import bcrypt from "bcryptjs"
 import { prisma } from "#/lib/prisma.js"
-import { signJwt } from "#utils/jwt.js"
+import { checkUser, signJwt } from "#utils/jwt.js"
 
 export const changePassword = async (req: Request<never, never, ChangePasswordType>, res: Response) =>{
+  checkUser(req.user)
   const {current_password, new_password} = req.body
-  if(!req.user){
-    throw new AppError("Not authorized", 403)
-  }
   const dbHash  = await prisma.user.findUniqueOrThrow({
     where: {id: req.user.id},
     select:{hash: true}
